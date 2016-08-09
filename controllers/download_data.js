@@ -17,6 +17,7 @@ var secret_key = configEnv[NODE_ENV].SECRET_KEY;
 
 var request = require('request');
 var fs = require('fs-extra');
+var AdmZip = require('adm-zip');
 var unzip = require('unzip');
 var AWS = require('aws-sdk');
 
@@ -54,13 +55,14 @@ var filepath = [];
 var url = [];
 
 
-for (lat = 40; lat >= 39; lat--) {
-	for (lon = -117; lon <= -99; lon++) {
+for (lat = 40; lat >= 40; lat--) {
+	for (lon = -106; lon <= -106; lon++) {
 		var fi = makeFileName(lat, lon);
-		var fi_flt = fi.replace('.zip', '.flt').toLowerCase();
+		//var fi_flt = fi.replace('.zip', '.flt').toLowerCase();
+		var fi_flt = 'float' + fi.replace('.zip', '.flt').toLowerCase().replace('.flt', '_1.flt');
 		console.log(fi_flt);
 		
-		if (fetched_files.indexOf(fi_flt) < 0) {
+		if (fetched_files.indexOf(fi_flt) < 0 && fi_flt != '') {
 			filename.push(fi);
 			url.push(root_url + '/' + fi);
 			filepath.push(data_dir + '/dummy/' + fi);
@@ -68,8 +70,9 @@ for (lat = 40; lat >= 39; lat--) {
 	}
 }
 
-
-getFile(0);
+if (url.length > 0) {
+	getFile(0);
+}
 
 
 function makeFileName(lat, lon) {
@@ -90,6 +93,7 @@ function makeFileName(lat, lon) {
 	var lon_str = padZero(lon_ul, 3);
 	
 	var filename = 'USGS_NED_1_' + ns + lat_str + ew + lon_str + '_GridFloat.zip';
+	var filename = ns + lat_str + ew + lon_str + '.zip';
 	
 	return filename;
 }
@@ -142,7 +146,7 @@ function getFile(n) {
 			//console.log('response.headers : ' + JSON.stringify(response.headers) );
 			
 			console.log('filename: ' + filename[n] + ' status: ' + response.statusCode);
-			var flt_filename = filename[n].replace('.zip', '.flt').toLowerCase();
+			var flt_filename = 'float' + filename[n].replace('.zip', '.flt').toLowerCase().replace('.flt', '_1.flt');
 			var flt_filepath = data_dir + '/dummy/' + flt_filename;
 			if (response.statusCode == 200) {
 			
@@ -153,38 +157,38 @@ function getFile(n) {
 					}
 					
 					//unzip
-					fs.createReadStream(filepath[n]).pipe(unzip.Extract({ path: data_dir + '/dummy' }).on("close", function() {
-						console.log("unzipped");
 
+					console.log(filepath[n]);
 					
+					var zip = new AdmZip(filepath[n]);
+					zip.extractAllTo(data_dir + '/dummy');
 					
-						console.log('uploading to S3: ' + flt_filepath);
-						console.log(new Date())
-						fs.readFile(flt_filepath, function(err, file_buffer){
-							var params = {
-								Bucket: bucket,
-								Key : 'ned_1_zip/' + flt_filename,
-								Body: file_buffer
-							};
+					console.log('uploading to S3: ' + flt_filepath);
+					console.log(new Date())
+					fs.readFile(flt_filepath, function(err, file_buffer){
+						var params = {
+							Bucket: bucket,
+							Key : 'ned_1_zip/' + flt_filename,
+							Body: file_buffer
+						};
 
-							s3.putObject(params, function (perr, pres) {
-								if (perr) {
-									console.log("Error uploading data: ", perr);
+						s3.putObject(params, function (perr, pres) {
+							if (perr) {
+								console.log("Error uploading data: ", perr);
 
-								} else {
-									console.log("Successfully uploaded data");
-									console.log(new Date());
-									
-									fs.appendFileSync(data_dir + '/file_list.txt', flt_filename + ' yes\n');
-									fs.emptyDirSync(data_dir + '/dummy');
-									if (n+1 < url.length) {
-										getFile(n+1);
-									}
-  
+							} else {
+								console.log("Successfully uploaded data");
+								console.log(new Date());
+								
+								fs.appendFileSync(data_dir + '/file_list.txt', flt_filename + ' yes\n');
+								fs.emptyDirSync(data_dir + '/dummy');
+								if (n+1 < url.length) {
+									getFile(n+1);
 								}
-							});
+
+							}
 						});
-					}));
+					});			
 				});
 			
 			}
