@@ -35,7 +35,7 @@ var s3 = new AWS.S3();
 
 
 //fetched files
-var dum = fs.readFileSync(data_dir + '/file_list.txt', 'utf-8');
+var dum = fs.readFileSync(data_dir + '/file_list_2sec.txt', 'utf-8');
 var files = dum.split('\n')
 var fetched_files = [];
 var dum1;
@@ -48,7 +48,7 @@ for (var i = 0; i < files.length; i++) {
 }
 
 var lat, lon, ns, ew, filename;
-var root_url = 'https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1/GridFloat';
+var root_url = 'https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/2/GridFloat';
 
 var filename = [];
 var filepath = [];
@@ -59,7 +59,7 @@ for (lat = 40; lat >= 40; lat--) {
 	for (lon = -106; lon <= -106; lon++) {
 		var fi = makeFileName(lat, lon);
 		//var fi_flt = fi.replace('.zip', '.flt').toLowerCase();
-		var fi_flt = 'float' + fi.replace('.zip', '.flt').toLowerCase().replace('.flt', '_1.flt');
+		var fi_flt = 'float' + fi.replace('.zip', '.flt').toLowerCase().replace('.flt', '_2.flt');
 		console.log(fi_flt);
 		
 		if (fetched_files.indexOf(fi_flt) < 0 && fi_flt != '') {
@@ -92,7 +92,7 @@ function makeFileName(lat, lon) {
 	var lat_str = padZero(lat_ul, 2);
 	var lon_str = padZero(lon_ul, 3);
 	
-	var filename = 'USGS_NED_1_' + ns + lat_str + ew + lon_str + '_GridFloat.zip';
+	var filename = 'USGS_NED_2_' + ns + lat_str + ew + lon_str + '_GridFloat.zip';
 	var filename = ns + lat_str + ew + lon_str + '.zip';
 	
 	return filename;
@@ -146,7 +146,7 @@ function getFile(n) {
 			//console.log('response.headers : ' + JSON.stringify(response.headers) );
 			
 			console.log('filename: ' + filename[n] + ' status: ' + response.statusCode);
-			var flt_filename = 'float' + filename[n].replace('.zip', '.flt').toLowerCase().replace('.flt', '_1.flt');
+			var flt_filename = 'float' + filename[n].replace('.zip', '.flt').toLowerCase().replace('.flt', '_2.flt');
 			var flt_filepath = data_dir + '/dummy/' + flt_filename;
 			if (response.statusCode == 200) {
 			
@@ -168,7 +168,7 @@ function getFile(n) {
 					fs.readFile(flt_filepath, function(err, file_buffer){
 						var params = {
 							Bucket: bucket,
-							Key : 'ned_1_zip/' + flt_filename,
+							Key : 'ned_2_zip/' + flt_filename,
 							Body: file_buffer
 						};
 
@@ -180,7 +180,7 @@ function getFile(n) {
 								console.log("Successfully uploaded data");
 								console.log(new Date());
 								
-								fs.appendFileSync(data_dir + '/file_list.txt', flt_filename + ' yes\n');
+								fs.appendFileSync(data_dir + '/file_list_2sec.txt', flt_filename + ' yes\n');
 								fs.emptyDirSync(data_dir + '/dummy');
 								if (n+1 < url.length) {
 									getFile(n+1);
@@ -194,7 +194,7 @@ function getFile(n) {
 			}
 			else {
 				console.log('File not found: ' + url[n]);
-				fs.appendFileSync(data_dir + '/file_list.txt', flt_filename + ' no\n');
+				fs.appendFileSync(data_dir + '/file_list_2sec.txt', flt_filename + ' no\n');
 
 				if (n+1 < url.length) {
 					getFile(n+1);
